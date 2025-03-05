@@ -1,23 +1,16 @@
 import streamlit as st
 #import option_menu from streamlit
 from streamlit_option_menu import option_menu
-from database import fetch_user
-import pandas as pd
+import joblib
 import numpy as np
 import datetime
-from sklearn.preprocessing import scale
-from sklearn.model_selection import train_test_split
-from sklearn import ensemble
-data=pd.read_csv('cleaned_traffic_volume.csv')
-y= data['traffic_volume']
-x= data.drop(columns=['traffic_volume'],axis=1)
-names=x.columns
-x=scale(x)
-x=pd.DataFrame( x,columns=names)
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
-Rand=ensemble.RandomForestRegressor()
-Rand.fit(x_train, y_train)
-p3=Rand.predict(x_train)
+import cv2
+import streamlit as st
+import tempfile
+from ultralytics import YOLO
+import numpy as np
+model = joblib.load('model.pkl')
+encoder = joblib.load('encoder.pkl')
 
 def navigate_to_page(page_name):
     st.session_state["current_page"] = page_name
@@ -28,8 +21,8 @@ def user_home_page():
     with st.sidebar:
         select = option_menu(
             "Dashboard",
-            ['Home',"Traffic Volume","Logout"],
-            icons=['house','car-front-fill','unlock-fill'],
+            ['Home',"Traffic Volume","Real Time Traffic","Logout"],
+            icons=['house','car-front-fill','stoplights-fill','unlock-fill'],
             menu_icon="cast",
             default_index=0,
             orientation="vertical",
@@ -108,7 +101,7 @@ def user_home_page():
             input_features = [holiday, temp, rain, snow, weather, year, month, day, hours, minutes, seconds]
             if st.form_submit_button(label="Predict Traffic Volume"):
                 features_values = np.array(input_features).reshape(1, -1)
-                prediction = Rand.predict(features_values)
+                prediction = model.predict(features_values)
                 text = f"Estimated Traffic Volume is: {prediction[0]}"
                 if prediction[0] < 500:
                     k=0
@@ -156,7 +149,120 @@ def user_home_page():
                     """,
                     unsafe_allow_html=True
                 )
-  
+    elif select == 'Real Time Traffic':
+        st.markdown(
+            """
+            <style>
+            /* Apply background image to the main content area */
+            .main {
+                background-image: url("https://img.freepik.com/free-vector/abstract-watercolor-background_23-2149056656.jpg");  
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+            )
+        # Load YOLOv8 model
+        model1 = YOLO("yolov8n.pt")
+        # Define object categories
+        grouped_categories = {
+            "Vehicles": ["car", "truck", "bus", "train", "motorcycle", "bicycle", "boat", "airplane"],
+            "Electronics": ["laptop", "mouse", "keyboard", "cell phone", "tv", "remote", "microwave", "oven"],
+            "Animals": ["dog", "cat", "bird", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe"],
+            "Furniture": ["chair", "couch", "bed", "dining table", "potted plant", "toilet"],
+            "Food Items": ["bottle", "cup", "wine glass", "banana", "apple", "sandwich", "pizza", "donut", "cake"],
+            "Sports & Outdoor": ["frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "tennis racket"],
+            "Accessories": ["backpack", "umbrella", "handbag", "tie", "suitcase", "watch", "glasses"],
+        }
+
+        def classify_objects(detected_objects):
+            category_counts = {category: 0 for category in grouped_categories.keys()}
+            
+            for obj, count in detected_objects.items():
+                for category, items in grouped_categories.items():
+                    if obj in items:
+                        category_counts[category] += count
+                        break
+            
+            return category_counts
+
+        def detect_objects(frame):
+            results = model1(frame)
+            detected_objects = {}
+            
+            for result in results:
+                boxes = result.boxes.xyxy.cpu().numpy()
+                classes = result.boxes.cls.cpu().numpy()
+                
+                for box, cls in zip(boxes, classes):
+                    label = model1.names[int(cls)]
+                    detected_objects[label] = detected_objects.get(label, 0) + 1
+                    x1, y1, x2, y2 = map(int, box)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            
+            return frame, detected_objects
+
+        #title
+        st.markdown(f"<h1 style='text-align: center; color: red;'>Traffic Monitoring</h1>", unsafe_allow_html=True)
+        option = st.selectbox("Choose Input Source", ("Webcam", "Upload Video"))
+
+        video_file = None
+        if option == "Upload Video":
+            video_file = st.file_uploader("Upload Video", type=["mp4", "avi", "mov", "mkv"])
+        col1,col2,col3=st.columns([2,1,2])
+        if col2.button("Start Detection",type='primary'):
+            if option == "Webcam":
+                cap = cv2.VideoCapture(0)
+            elif video_file is not None:
+                tfile = tempfile.NamedTemporaryFile(delete=False)
+                tfile.write(video_file.read())
+                cap = cv2.VideoCapture(tfile.name)
+            else:
+                st.error("Please upload a video file.")
+                exit()
+
+            stframe = st.empty()
+            
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
+                frame, detected_objects = detect_objects(frame)
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                
+                # Create a blank canvas for object count display
+                overlay = np.ones((frame.shape[0], 300, 3), dtype=np.uint8) * 255
+                y_offset = 50
+                cv2.putText(overlay, "Objects Count", (50, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+                for idx, (obj, count) in enumerate(detected_objects.items()):
+                    cv2.putText(overlay, f"{obj}: {count}", (50, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    y_offset += 40
+                
+                # Classify objects into categories
+                category_counts = classify_objects(detected_objects)
+                
+                # Create another blank canvas for categorized counts
+                category_overlay = np.ones((frame.shape[0], 300, 3), dtype=np.uint8) * 255
+                y_offset = 50
+                cv2.putText(category_overlay, "Category Report", (50, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+                
+                for idx, (category, count) in enumerate(category_counts.items()):
+                    cv2.putText(category_overlay, f"{category}: {count}", (50, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+                    y_offset += 40
+                
+                # Concatenate frames for display
+                combined_frame = np.hstack((frame, overlay, category_overlay))
+                
+                stframe.image(combined_frame, channels="RGB")
+            
+            cap.release()
+            cv2.destroyAllWindows()
+
+
     elif select == 'Logout':
         st.session_state["logged_in"] = False
         st.session_state["current_user"] = None
