@@ -7,6 +7,7 @@ import datetime
 import cv2
 import streamlit as st
 import tempfile
+from pathlib import Path
 from ultralytics import YOLO
 import numpy as np
 import gdown
@@ -230,7 +231,7 @@ def user_home_page():
         col1,col2,col3=st.columns([2,1,2])
         if col2.button("Start Detection",type='primary'):
             if option == "Webcam":
-                cap = cv2.VideoCapture(1)
+                cap = cv2.VideoCapture(0)
             elif video_file is not None:
                 tfile = tempfile.NamedTemporaryFile(delete=False)
                 tfile.write(video_file.read())
