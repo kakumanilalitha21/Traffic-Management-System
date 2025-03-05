@@ -9,7 +9,22 @@ import streamlit as st
 import tempfile
 from ultralytics import YOLO
 import numpy as np
-model = joblib.load('model.pkl')
+import gdown
+import pickle
+
+# Google Drive file ID extracted from the link
+file_id = "11bsWFQYp33d38U-MqzgHKjIOU2DimobF"
+output = "model.pkl"  # Save as model.pkl
+
+# Construct the download URL
+url = f"https://drive.google.com/uc?id={file_id}"
+
+# Download the file
+gdown.download(url, output, quiet=False)
+
+# Load the model.pkl file
+with open(output, "rb") as file:
+    model = pickle.load(file)
 encoder = joblib.load('encoder.pkl')
 
 def navigate_to_page(page_name):
