@@ -230,7 +230,7 @@ def user_home_page():
         col1,col2,col3=st.columns([2,1,2])
         if col2.button("Start Detection",type='primary'):
             if option == "Webcam":
-                cap = cv2.VideoCapture(0)
+                cap = cv2.VideoCapture(1)
             elif video_file is not None:
                 tfile = tempfile.NamedTemporaryFile(delete=False)
                 tfile.write(video_file.read())
