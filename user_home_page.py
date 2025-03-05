@@ -7,7 +7,6 @@ import datetime
 import cv2
 import streamlit as st
 import tempfile
-from pathlib import Path
 from ultralytics import YOLO
 import numpy as np
 import gdown
@@ -223,16 +222,11 @@ def user_home_page():
 
         #title
         st.markdown(f"<h1 style='text-align: center; color: red;'>Traffic Monitoring</h1>", unsafe_allow_html=True)
-        option = st.selectbox("Choose Input Source", ("Webcam", "Upload Video"))
 
-        video_file = None
-        if option == "Upload Video":
-            video_file = st.file_uploader("Upload Video", type=["mp4", "avi", "mov", "mkv"])
+        video_file = st.file_uploader("Upload Video", type=["mp4", "avi", "mov", "mkv"])
         col1,col2,col3=st.columns([2,1,2])
         if col2.button("Start Detection",type='primary'):
-            if option == "Webcam":
-                cap = cv2.VideoCapture(0)
-            elif video_file is not None:
+            if video_file is not None:
                 tfile = tempfile.NamedTemporaryFile(delete=False)
                 tfile.write(video_file.read())
                 cap = cv2.VideoCapture(tfile.name)
