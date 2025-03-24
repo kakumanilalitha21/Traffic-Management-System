@@ -1,5 +1,5 @@
 import streamlit as st
-from database import add_user
+from database import add_user,update_otp
 import re
 def navigate_to_page(page_name):
     st.session_state["current_page"] = page_name
@@ -29,6 +29,7 @@ def signup_page():
             navigate_to_page("home")
         name=st.text_input("Name")
         email = st.text_input("Email", key="signup_email")
+        otp=None
         col1,col2=st.columns([1,1])
         password = col1.text_input("Create a Password", type="password", key="signup_password")
         retyped_password = col2.text_input("Retype Password", type="password", key="signup_retyped_password")
@@ -36,7 +37,8 @@ def signup_page():
         with col1:
             if st.form_submit_button("Sign Up") and validate_mail(email)!=None and len(password)>=6 and password==retyped_password and name:
                 try:
-                    add_user(name,email,password)
+                    add_user(name,email,otp,password)
+                    update_otp(email,otp)
                     st.success("Account created successfully!!")
                     navigate_to_page("login")
                 except Exception as e:
@@ -46,7 +48,7 @@ def signup_page():
             elif password!=retyped_password:
                 st.error("Passwords do not match.")
             elif len(password)<6 and len(password)!=0:
-                st.error("Password must be at least 8 characters long.")
+                st.error("Password must be at least 6 characters long.")
         with col3:
             if st.form_submit_button("Already have an account🤔"):
                 navigate_to_page("login")
