@@ -10,6 +10,7 @@ import tempfile
 from ultralytics import YOLO
 import numpy as np
 import pickle
+import gdown
 import os
 from pathlib import Path
 from typing import NamedTuple
