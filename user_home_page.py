@@ -22,7 +22,11 @@ ROOT = HERE.parent
 MODEL_URL = "https://github.com/oracl4/RoadDamageDetection/raw/main/models/YOLOv8_Small_RDD.pt"  # noqa: E501
 MODEL_LOCAL_PATH = ROOT / "./models/YOLOv8_Small_RDD.pt"
 download_file(MODEL_URL, MODEL_LOCAL_PATH, expected_size=89569358)
+file_id = "11bsWFQYp33d38U-MqzgHKjIOU2DimobF"
+output = "model.pkl"
 
+url = f"https://drive.google.com/uc?id={file_id}"
+gdown.download(url, output, quiet=False)
 # Session-specific caching
 # Load the model
 cache_key = "yolov8smallrdd"
