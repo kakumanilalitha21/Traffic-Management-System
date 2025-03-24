@@ -7,6 +7,7 @@ c.execute("""
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         email TEXT NOT NULL,
+        otp TEXT,
         password TEXT NOT NULL
         
     )
@@ -14,10 +15,10 @@ c.execute("""
 conn.commit()
 conn.close()
 
-def add_user(name,email, password):
+def add_user(name,email,otp, password):
     conn = sqlite3.connect("users.db")
     c = conn.cursor()
-    c.execute("INSERT INTO users (name,email,password) VALUES (?, ?, ?)", (name,email, password))
+    c.execute("INSERT INTO users (name,email,otp,password) VALUES (?, ?, ?,?)", (name,email,otp, password))
     conn.commit()
     conn.close()
 
@@ -35,3 +36,17 @@ def fetch_user(email):
     user = c.fetchone()
     conn.close()
     return user
+def update_otp(email, otp):
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("UPDATE users SET otp = ? WHERE email = ?", (otp, email))
+    conn.commit()
+    conn.close()
+
+def fetch_otp(email):
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("SELECT otp FROM users WHERE email = ?", (email,))
+    otp = c.fetchone()
+    conn.close()
+    return otp
