@@ -8,3 +8,4 @@ opencv-python==4.10.0.84
 yt-dlp==2024.10.22
 pathlib==1.0.1
 ultralytics==8.3.17
+gdown
