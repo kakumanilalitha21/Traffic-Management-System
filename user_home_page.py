@@ -580,7 +580,7 @@ def user_home_page():
         unsafe_allow_html=True,
         )
         #give the option to upload the image or video
-        video_file = st.file_uploader("Upload Video", type=".mp4", disabled=st.session_state.runningInference)
+        video_file = st.file_uploader("Upload Pothole Video", type=".mp4")
         score_threshold = 0.10
         col1,col2,col3=st.columns([2,2,1])
         button=col2.button('Start Detection',key='processing_button',type='primary')
